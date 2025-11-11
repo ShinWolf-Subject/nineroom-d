@@ -1,3 +1,19 @@
+// TEMPORARY FIX - Add this at the top of client.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Force enable everything after page loads
+    setTimeout(function() {
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.querySelector('#messageForm button');
+        const usernameInput = document.getElementById('usernameInput');
+        
+        if (messageInput && sendButton) {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            messageInput.placeholder = "Temporary fix - Enter username above then type message...";
+        }
+    }, 1000);
+});
+
 // Initialize Pusher
 const pusher = new Pusher(process.env.PUSHER_KEY || 'eb678b79e8ee6857232c', {
     cluster: process.env.PUSHER_CLUSTER || 'mt1',
