@@ -1,6 +1,6 @@
-// Initialize Pusher
+// Initialize Pusher with YOUR actual credentials
 const pusher = new Pusher('eb678b79e8ee6857232c', {
-    cluster: 'mt1', // Change to your actual cluster
+    cluster: 'mt1',
     forceTLS: true
 });
 
@@ -11,22 +11,31 @@ const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
 const messagesList = document.getElementById('messages');
 const usernameInput = document.getElementById('usernameInput');
-const typingIndicator = document.getElementById('typing-indicator');
+const sendButton = document.querySelector('#messageForm button');
 
 let username = '';
-let isConnected = false;
 
-// Enable chat when username is entered
+// SIMPLE FIX: Remove all disabled attributes on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded - removing all disabled attributes');
+    
+    // Remove disabled attributes completely
+    messageInput.removeAttribute('disabled');
+    sendButton.removeAttribute('disabled');
+    
+    // Focus on username field
+    usernameInput.focus();
+    
+    console.log('Inputs should now be enabled');
+});
+
+// Update UI when username is entered
 usernameInput.addEventListener('input', function() {
     username = this.value.trim();
-    const hasUsername = username.length > 0;
     
-    messageInput.disabled = !hasUsername;
-    messageForm.querySelector('button').disabled = !hasUsername;
-    
-    if (hasUsername && !isConnected) {
-        isConnected = true;
-        addSystemMessage(`Welcome, ${username}! Start chatting.`);
+    if (username) {
+        console.log('Username set to:', username);
+        addSystemMessage(`Welcome, ${username}! You can now chat.`);
         messageInput.focus();
     }
 });
@@ -36,12 +45,15 @@ messageForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const message = messageInput.value.trim();
-    if (message && username) {
+    if (message) {
+        // If no username, use "Anonymous"
+        const displayUsername = username || 'Anonymous';
+        
         try {
-            // Show message immediately for better UX
-            addMessage(username, message, new Date().toLocaleTimeString(), true);
+            console.log('Sending message as:', displayUsername);
             
-            // Clear input
+            // Show message immediately
+            addMessage(displayUsername, message, new Date().toLocaleTimeString(), true);
             messageInput.value = '';
             
             // Send to server
@@ -51,45 +63,47 @@ messageForm.addEventListener('submit', async function(e) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    username: username,
+                    username: displayUsername,
                     message: message
                 })
             });
             
             if (!response.ok) {
-                throw new Error('Failed to send message');
+                throw new Error('Server error: ' + response.status);
             }
             
-            console.log('Message sent successfully');
+            console.log('✅ Message sent successfully');
             
         } catch (error) {
-            console.error('Error sending message:', error);
-            addSystemMessage('Failed to send message. Please check connection.');
+            console.error('❌ Error sending message:', error);
+            addSystemMessage('Failed to send message. Please check console.');
         }
     }
 });
 
-// Listen for new messages from other users
+// Listen for new messages from Pusher
 channel.bind('chat-message', function(data) {
-    console.log('Received message:', data);
-    // Only add message if it's from another user
-    if (data.username !== username) {
+    console.log('📨 Received message:', data);
+    
+    // Don't show our own messages twice
+    const currentUsername = username || 'Anonymous';
+    if (data.username !== currentUsername) {
         addMessage(data.username, data.message, data.timestamp, false);
     }
 });
 
-// Connection events for debugging
+// Pusher connection events
 pusher.connection.bind('connected', function() {
-    console.log('Pusher connected successfully');
-    addSystemMessage('Connected to chat!');
+    console.log('✅ Connected to Pusher');
+    addSystemMessage('Connected to chat! Start messaging.');
 });
 
 pusher.connection.bind('error', function(err) {
-    console.error('Pusher connection error:', err);
-    addSystemMessage('Connection error. Please refresh.');
+    console.error('❌ Pusher error:', err);
+    addSystemMessage('Connection issue - trying to reconnect...');
 });
 
-// Add a message to the chat
+// Add message to chat
 function addMessage(sender, text, timestamp, isOwn = false) {
     const li = document.createElement('li');
     li.className = 'message';
@@ -108,27 +122,24 @@ function addMessage(sender, text, timestamp, isOwn = false) {
     `;
     
     messagesList.appendChild(li);
-    
-    // Scroll to bottom
     messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
 }
 
-// Add system messages
+// Add system message
 function addSystemMessage(text) {
     const li = document.createElement('li');
     li.className = 'system-message';
     li.textContent = text;
     messagesList.appendChild(li);
-    
     messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
 }
 
-// Debug info
-console.log('Chat client loaded');
-console.log('Pusher instance:', pusher);    li.className = 'system-message';
-    li.textContent = text;
-    messagesList.appendChild(li);
-    
-    // Scroll to bottom
-    messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
-}
+// Force enable after 2 seconds as backup
+setTimeout(() => {
+    if (messageInput.disabled) {
+        console.log('🔄 Backup: Force-enabling inputs');
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        messageInput.placeholder = "Type your message here...";
+    }
+}, 2000);
