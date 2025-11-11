@@ -1,0 +1,11 @@
+{
+  "name": "simple-chat-room",
+  "version": "1.0.0",
+  "description": "Real-time chat room",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "pusher": "^5.1.0"
+  }
+}

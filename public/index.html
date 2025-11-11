@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat Room</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>💬 Simple Chat Room</h1>
+            <div class="user-count">Live on Vercel</div>
+        </div>
+        
+        <div class="messages-container">
+            <ul id="messages"></ul>
+            <div id="typing-indicator"></div>
+        </div>
+        
+        <div class="input-container">
+            <div class="username-input">
+                <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="20">
+            </div>
+            <form id="messageForm">
+                <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" maxlength="500" disabled>
+                <button type="submit" disabled>Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>
