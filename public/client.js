@@ -1,6 +1,6 @@
 // Initialize Pusher
-const pusher = new Pusher('YOUR_PUSHER_KEY', {  // We'll set this as environment variable
-    cluster: 'YOUR_PUSHER_CLUSTER',
+const pusher = new Pusher(process.env.PUSHER_KEY || 'eb678b79e8ee6857232c', {
+    cluster: process.env.PUSHER_CLUSTER || 'mt1',
     forceTLS: true
 });
 
