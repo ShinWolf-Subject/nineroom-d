@@ -1,22 +1,6 @@
-// TEMPORARY FIX - Add this at the top of client.js
-document.addEventListener('DOMContentLoaded', function() {
-    // Force enable everything after page loads
-    setTimeout(function() {
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.querySelector('#messageForm button');
-        const usernameInput = document.getElementById('usernameInput');
-        
-        if (messageInput && sendButton) {
-            messageInput.disabled = false;
-            sendButton.disabled = false;
-            messageInput.placeholder = "Temporary fix - Enter username above then type message...";
-        }
-    }, 1000);
-});
-
 // Initialize Pusher
-const pusher = new Pusher(process.env.PUSHER_KEY || 'eb678b79e8ee6857232c', {
-    cluster: process.env.PUSHER_CLUSTER || 'mt1',
+const pusher = new Pusher('eb678b79e8ee6857232c', {
+    cluster: 'mt1', // Change to your actual cluster
     forceTLS: true
 });
 
@@ -30,16 +14,20 @@ const usernameInput = document.getElementById('usernameInput');
 const typingIndicator = document.getElementById('typing-indicator');
 
 let username = '';
-let typingTimer;
+let isConnected = false;
 
-// Set username and enable chat
-usernameInput.addEventListener('change', function() {
+// Enable chat when username is entered
+usernameInput.addEventListener('input', function() {
     username = this.value.trim();
-    if (username) {
-        messageInput.disabled = false;
-        messageForm.querySelector('button').disabled = false;
-        messageInput.focus();
+    const hasUsername = username.length > 0;
+    
+    messageInput.disabled = !hasUsername;
+    messageForm.querySelector('button').disabled = !hasUsername;
+    
+    if (hasUsername && !isConnected) {
+        isConnected = true;
         addSystemMessage(`Welcome, ${username}! Start chatting.`);
+        messageInput.focus();
     }
 });
 
@@ -49,9 +37,15 @@ messageForm.addEventListener('submit', async function(e) {
     
     const message = messageInput.value.trim();
     if (message && username) {
-        // Send message to our API route
         try {
-            await fetch('/api/send-message', {
+            // Show message immediately for better UX
+            addMessage(username, message, new Date().toLocaleTimeString(), true);
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Send to server
+            const response = await fetch('/api/send-message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -62,23 +56,37 @@ messageForm.addEventListener('submit', async function(e) {
                 })
             });
             
-            // Add message locally immediately for better UX
-            addMessage(username, message, new Date().toLocaleTimeString(), true);
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
             
-            // Clear input
-            messageInput.value = '';
+            console.log('Message sent successfully');
+            
         } catch (error) {
             console.error('Error sending message:', error);
+            addSystemMessage('Failed to send message. Please check connection.');
         }
     }
 });
 
-// Listen for new messages
+// Listen for new messages from other users
 channel.bind('chat-message', function(data) {
-    // Don't show our own messages twice (they're already shown locally)
+    console.log('Received message:', data);
+    // Only add message if it's from another user
     if (data.username !== username) {
         addMessage(data.username, data.message, data.timestamp, false);
     }
+});
+
+// Connection events for debugging
+pusher.connection.bind('connected', function() {
+    console.log('Pusher connected successfully');
+    addSystemMessage('Connected to chat!');
+});
+
+pusher.connection.bind('error', function(err) {
+    console.error('Pusher connection error:', err);
+    addSystemMessage('Connection error. Please refresh.');
 });
 
 // Add a message to the chat
@@ -109,6 +117,15 @@ function addMessage(sender, text, timestamp, isOwn = false) {
 function addSystemMessage(text) {
     const li = document.createElement('li');
     li.className = 'system-message';
+    li.textContent = text;
+    messagesList.appendChild(li);
+    
+    messagesList.parentElement.scrollTop = messagesList.parentElement.scrollHeight;
+}
+
+// Debug info
+console.log('Chat client loaded');
+console.log('Pusher instance:', pusher);    li.className = 'system-message';
     li.textContent = text;
     messagesList.appendChild(li);
     
